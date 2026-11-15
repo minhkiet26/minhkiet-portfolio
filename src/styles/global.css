@@ -10,13 +10,88 @@
 .ticker-copy{flex:none;min-width:100vw;white-space:nowrap;word-spacing:12px;padding-right:28px}
 @keyframes ticker-scroll{to{transform:translateX(-50%)}}
 .ticker:hover .ticker-track{animation-play-state:paused}
-.rebuild-panel{position:relative}
-.rebuild-crew{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;border-radius:inherit}
-.rebuild-crew:before{content:'';position:absolute;inset:0;border:1px dashed var(--ink);opacity:.22;border-radius:inherit}
-.rebuild-pointer{position:absolute;top:0;left:0;background:transparent!important;line-height:1;will-change:transform,opacity}
-.rebuild-pointer svg{fill:currentColor;stroke:var(--surface);stroke-width:1;display:block}
-.rebuild-pointer.mint{color:#429b77}.rebuild-pointer.blue{color:#428dc7}.rebuild-pointer.yellow{color:#ba9325}
-.rebuild-pointer span{display:block;margin-left:18px;padding:4px 7px;border-radius:4px;color:#fff;font:9px 'DM Sans',sans-serif}
-.rebuild-pointer.mint span{background:#347b5d}.rebuild-pointer.blue span{background:#3476a9}.rebuild-pointer.yellow span{background:#8b6d19}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}.swarm-cursor,.rebuild-crew{display:none}.ticker>.ticker-track{transform:none;will-change:auto}}
-@media print{.rebuild-panel{opacity:1!important;clip-path:none!important}.rebuild-crew{display:none}}
+/* Each Dock destination owns a viewport; long content remains scrollable within it. */
+html{scroll-padding-top:0;scrollbar-gutter:stable}
+html.swarm-ready{scroll-snap-type:y mandatory}
+.swarm-ready .page-screen{scroll-snap-align:start;scroll-snap-stop:always}
+.swarm-ready .page-screen:not(.swarm-active) .screen-content{visibility:hidden}
+html.swarm-locked,html.swarm-locked body{overflow:hidden;overscroll-behavior:none}
+html.swarm-locked .page-screen{overflow:hidden;touch-action:none}
+.page-screen{height:100svh;min-height:0;overflow-y:auto;overflow-x:hidden;position:relative;scroll-margin-top:0;scrollbar-width:thin}
+.page-screen:focus-visible{outline:3px solid var(--ink);outline-offset:-4px}
+.screen-content{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding-block:64px 124px}
+.home-content{height:100%;min-height:0;padding-top:0;justify-content:flex-start}
+.home-main{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+html.swarm-locked .home-main{overflow:hidden}
+
+.home-content .header{flex:none;height:86px}
+.home-content .hero{flex:1 0 auto;min-height:0;padding-top:42px;align-content:center}
+.home-content .hero-bottom{padding-top:32px}
+.home-content .ticker{flex:none;position:relative;z-index:1}
+.project-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.project-grid .project-card{grid-template-columns:1fr;margin:0}
+.project-grid .project-art{min-height:180px;padding:16px}
+.project-grid .vnz-logo{font-size:46px}
+.project-grid .vnz-art>p{margin:6px 0}
+.project-grid .architecture{margin-top:12px}
+.project-grid .seal-art{padding:8px 0}
+.project-grid .seal-logo{font-size:42px}
+.project-grid .seal-nodes{margin-top:12px}
+.project-grid .seal-orbit{width:200px;height:86px}
+.project-grid .project-info{padding:22px}
+.project-grid h3{font-size:26px;margin:12px 0 8px}
+.project-grid .project-info>p{margin-bottom:14px}
+.project-grid .project-footer{margin-top:18px;padding-top:12px}
+.projects .section-heading{margin-bottom:28px}
+.about-copy{max-width:740px}
+.about-copy .text-link{align-self:flex-start}
+.skills-layout{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-content:center;align-items:center}
+.contact .footer{width:100%;margin-top:64px;padding:24px 0 0}
+.swarm-status{position:fixed;left:50%;bottom:112px;transform:translateX(-50%);z-index:30;border:1px solid var(--line);border-radius:12px;padding:8px 16px;text-align:center;background:var(--surface);box-shadow:var(--shadow);font-size:11px;pointer-events:none;max-width:calc(100% - 32px);width:max-content}
+.swarm-status>span:last-child{display:block;font-size:9px;color:var(--muted)}
+.swarm-ready:has(.home-screen.swarm-active) .swarm-status{bottom:99px;display:flex;align-items:center;gap:6px;padding:2px 10px;border-radius:20px;font-size:9px;line-height:16px}
+#swarm-progress{font-variant-numeric:tabular-nums;font-weight:700;margin-left:6px}
+@media(max-width:960px){.skills-layout{gap:32px}.home-content .hero{gap:24px}.project-grid{gap:16px}.project-grid .architecture{gap:4px}.project-grid .architecture>span{font-size:8px;padding:6px}.project-grid .project-meta{flex-wrap:wrap}.project-grid .project-info{padding:18px}}
+@media(max-width:680px){
+  .screen-content{padding-block:64px 116px}
+  .home-content{padding-top:0}
+  .home-content .header{height:72px}
+  .home-content .hero{padding-top:28px;gap:38px}
+  .home-content h1{font-size:72px;margin-block:16px}
+  .home-content .hero-description p{font-size:16px}
+  .home-content .portrait-area{margin:0 20px 12px}
+  .home-content .portrait-image{height:220px}
+  .home-content .hero-bottom{padding-top:6px;flex-wrap:wrap}
+  .project-grid{grid-template-columns:1fr}
+  .project-grid .project-card{grid-template-columns:92px minmax(0,1fr)}
+  .project-grid .project-art{min-height:0;padding:10px;justify-content:center}
+  .project-grid .art-top,.project-grid .art-bottom,.project-grid .architecture,.project-grid .vnz-art>p,.project-grid .seal-nodes,.project-grid .seal-logo>span,.project-grid .seal-orbit,.project-grid .seal-spark{display:none}
+  .project-grid .vnz-logo{font-size:20px;letter-spacing:-1px}.project-grid .vnz-logo i{font-size:7px;right:-5px}
+  .project-grid .seal-logo{font-size:20px;letter-spacing:0}
+  .project-grid .project-info{padding:16px}
+  .project-grid .project-meta{font-size:7px;letter-spacing:0}
+  .project-grid h3{font-size:22px}
+  .project-grid .project-info>p{font-size:11px;line-height:1.75}
+  .project-grid .tags{gap:4px}.project-grid .tags>span{font-size:8px;padding:2px 4px}
+  .project-grid .project-footer{gap:8px;flex-wrap:wrap}
+  .skills-layout{display:flex;gap:28px;align-items:stretch}
+  .skills-layout h2{font-size:32px}
+  .swarm-status{bottom:104px}
+  .swarm-ready:has(.home-screen.swarm-active) .swarm-status{bottom:89px}
+  .contact .footer{margin-top:40px}
+}
+/* Fit the introduction above the ticker on short desktop viewports and browser zoom. */
+@media(min-width:681px) and (max-height:800px){
+  .home-content .header{height:64px}
+  .home-content .hero{padding-top:24px;gap:8px 36px}
+  .home-content h1{font-size:clamp(58px,10svh,82px);margin:12px 0 16px;letter-spacing:-5px}
+  .home-content .hero-description p{font-size:16px}
+  .home-content .hero-note{font-size:11px;margin:14px 0 18px}
+  .home-content .replay{margin-top:16px}
+  .home-content .portrait-image{height:clamp(200px,37svh,300px)}
+  .home-content .portrait-area{margin-bottom:20px}
+  .home-content .hero-bottom{padding:10px 0}
+  .home-content .ticker{padding-block:10px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}.swarm-cursor{display:none}.ticker>.ticker-track{transform:none;will-change:auto}}
+@media print{.home-content{height:auto}.home-main{overflow:visible;flex:none}html.swarm-ready{scroll-snap-type:none}.swarm-ready .page-screen .screen-content{visibility:visible!important}.page-screen{height:auto;min-height:0;overflow:visible}.screen-content{min-height:0;padding-block:32px}.swarm-cursor,.skip-animation,.swarm-status,.dock{display:none!important}}

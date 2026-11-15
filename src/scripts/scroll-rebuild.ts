@@ -1,119 +1,241 @@
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger);
+const BUILD_DURATION = 4.5;
 
-/** Page-specific, original Swarm choreography; content remains in normal document flow. */
+/** One timeline owns the seven cursors and the currently visible Dock screen. */
 export function setupScrollRebuild() {
-  const media = gsap.matchMedia();
+  const screens = Array.from(document.querySelectorAll<HTMLElement>('.page-screen'));
+  const cursors = Array.from(document.querySelectorAll<HTMLElement>('.swarm-cursor'));
+  const skip = document.querySelector<HTMLButtonElement>('#skip-animation')!;
+  const replay = document.querySelector<HTMLButtonElement>('#replay')!;
+  const status = document.querySelector<HTMLElement>('#swarm-status')!;
+  const progress = document.querySelector<HTMLElement>('#swarm-progress')!;
+  const dockItems = Array.from(document.querySelectorAll<HTMLElement>('[data-nav]'));
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const visited = new Set<HTMLElement>();
+  const originalInert = screens.map(screen => screen.inert);
+  const parts = new Map(screens.map(screen => [screen, Array.from(screen.querySelectorAll<HTMLElement>(
+    '.build-item, .hero-bottom, .section-heading, .project-art, .project-meta, .project-info h3, .project-info > p, .tags, .project-footer, .project-footnote, .section-index, h2, .about-text, .about-copy > .text-link, .toolbox-title, .skill-group, .learning-note, .contact-heading, .contact-bottom, .footer'
+  )).filter(part => !part.parentElement?.closest('.build-item, .section-heading, .contact-heading'))]));
+  // Restore only animation-owned properties; preserve existing design transforms.
+  const styles = new Map(Array.from(parts.values()).flat().map(part => [part, {
+    opacity: part.style.opacity, clipPath: part.style.clipPath
+  }]));
+  let timeline: gsap.core.Timeline | null = null;
+  let active: HTMLElement | null = null;
+  let scrollLocked = false;
+  let scrollTimer = 0;
+  let navigating = false;
+  let navigationFrame = 0;
 
-  media.add('(prefers-reduced-motion: no-preference)', () => {
-    const panels = Array.from(document.querySelectorAll<HTMLElement>(
-      '.section-heading, .project-card, .project-footnote, .about-grid > div, #contact > .section-index, .contact-heading, .contact-bottom'
-    ));
-    const timelines = new Map<HTMLElement, gsap.core.Timeline>();
-    const triggers: ScrollTrigger[] = [];
-    const workers: HTMLElement[] = [];
-    const completed = new Set<HTMLElement>();
-
-    const show = (panel: HTMLElement) => {
-      timelines.get(panel)?.kill();
-      panel.querySelectorAll('.rebuild-crew').forEach(el => el.remove());
-      gsap.set(panel, { clearProps: 'opacity,clipPath' });
-      gsap.set(panel.querySelectorAll('[data-build-part]'), { clearProps: 'opacity,transform' });
-      completed.add(panel);
-    };
-
-    function build(panel: HTMLElement) {
-      if (completed.has(panel) || timelines.has(panel)) return;
-      const bounds = panel.getBoundingClientRect();
-      // Fast scrolling and direct anchor navigation should never leave content hidden above us.
-      if (bounds.bottom <= 0) { show(panel); return; }
-
-      const crew = document.createElement('div');
-      crew.className = 'rebuild-crew';
-      crew.setAttribute('aria-hidden', 'true');
-      const names = ['builder', 'designer', 'explorer'];
-      const colors = ['mint', 'blue', 'yellow'];
-      for (let i = 0; i < 3; i++) {
-        const cursor = document.createElement('div');
-        cursor.className = `rebuild-pointer ${colors[i]}`;
-        cursor.innerHTML = `<svg viewBox="0 0 24 24" width="27" height="27"><path d="m4 3 6 18 3-7 7-3Z"/></svg><span>${names[i]}</span>`;
-        crew.append(cursor);
-      }
-      panel.append(crew);
-      workers.push(crew);
-      const pointers = Array.from(crew.children);
-      const width = bounds.width;
-      const height = bounds.height;
-      const parts = Array.from(panel.querySelectorAll<HTMLElement>(
-        '.project-art, .project-meta, h3, .project-info > p, .tags, .project-footer, .about-text, .toolbox-title, .skill-group, .learning-note'
-      ));
-      parts.forEach(part => part.setAttribute('data-build-part', ''));
-      gsap.set(parts, { opacity: 0, y: 10 });
-      gsap.set(pointers, { opacity: 0, x: 10, y: 10 });
-
-      const timeline = gsap.timeline({ onComplete: () => show(panel) });
-      timelines.set(panel, timeline);
-      timeline.set(panel, { opacity: 1 })
-        .fromTo(panel, { clipPath: 'inset(0 100% 0 0)' }, {
-          clipPath: 'inset(0 0% 0 0)', duration: .8, ease: 'power2.out'
-        }, 0);
-
-      pointers.forEach((pointer, i) => {
-        const edge = Math.max(0, width - 85);
-        const row = Math.min(height - 40, 16 + height * i * .3);
-        timeline.to(pointer, { opacity: 1, duration: .12 }, i * .1)
-          .fromTo(pointer, { x: 8 + i * 18, y: row }, {
-            x: edge * (i === 1 ? .62 : 1), y: row + 12, duration: .85, ease: 'power2.inOut'
-          }, i * .1)
-          .to(pointer, { x: Math.min(edge, width * (.35 + i * .23)), y: Math.max(8, height - 50 - i * 18), duration: .45, ease: 'power2.inOut' }, .85 + i * .06)
-          .to(pointer, { opacity: 0, duration: .22 }, 1.35 + i * .06);
-      });
-      if (parts.length) timeline.to(parts, { opacity: 1, y: 0, duration: .42, stagger: .08, ease: 'power2.out' }, .2);
-    }
-
-    // Install triggers only after the script loads. No-JS and reduced-motion remain fully readable.
-    panels.forEach(panel => {
-      panel.classList.add('rebuild-panel');
-      const rect = panel.getBoundingClientRect();
-      if (rect.top < innerHeight * .85) { completed.add(panel); return; }
-      gsap.set(panel, { opacity: 0 });
-      triggers.push(ScrollTrigger.create({
-        trigger: panel,
-        start: 'top 88%',
-        once: true,
-        onEnter: () => build(panel),
-        onEnterBack: () => build(panel)
-      }));
+  function select(screen: HTMLElement) {
+    screens.forEach(candidate => candidate.classList.toggle('swarm-active', candidate === screen));
+    dockItems.forEach(item => {
+      const selected = item.dataset.nav === screen.id;
+      item.classList.toggle('active', selected);
+      if (selected) item.setAttribute('aria-current', 'location');
+      else item.removeAttribute('aria-current');
     });
+  }
 
-    const onFocus = (event: FocusEvent) => {
-      const panel = (event.target as HTMLElement).closest<HTMLElement>('.rebuild-panel');
-      if (panel) show(panel);
-    };
-    const showAll = (event: KeyboardEvent) => { if (event.key === 'Escape') panels.forEach(show); };
-    const onResize = () => { timelines.forEach((_, panel) => show(panel)); };
-    const onPrint = () => panels.forEach(show);
-    document.addEventListener('focusin', onFocus);
-    window.addEventListener('keydown', showAll);
-    window.addEventListener('resize', onResize);
-    window.addEventListener('beforeprint', onPrint);
+  function restore() {
+    timeline?.kill();
+    timeline = null;
+    styles.forEach((style, part) => {
+      part.style.opacity = style.opacity;
+      part.style.clipPath = style.clipPath;
+    });
+    gsap.set(cursors, { autoAlpha: 0 });
+    skip.hidden = !scrollLocked;
+  }
 
-    return () => {
-      triggers.forEach(trigger => trigger.kill());
-      panels.forEach(panel => {
-        show(panel);
-        panel.classList.remove('rebuild-panel');
-        panel.querySelectorAll('[data-build-part]').forEach(part => part.removeAttribute('data-build-part'));
-      });
-      workers.forEach(worker => worker.remove());
-      document.removeEventListener('focusin', onFocus);
-      window.removeEventListener('keydown', showAll);
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('beforeprint', onPrint);
-    };
-  });
+  function unlockScroll() {
+    scrollLocked = false;
+    document.documentElement.classList.remove('swarm-locked');
+    screens.forEach((screen, index) => { screen.inert = originalInert[index]; });
+    status.hidden = true;
+    const skipFocused = document.activeElement === skip;
+    restore();
+    if (skipFocused) active?.focus({ preventScroll: true });
+  }
 
-  window.addEventListener('pagehide', () => media.revert(), { once: true });
+  function nearestScreen() {
+    return screens.reduce((nearest, screen) => {
+      const distance = (el: HTMLElement) => Math.abs(el.getBoundingClientRect().top);
+      return distance(screen) < distance(nearest) ? screen : nearest;
+    }, screens[0]);
+  }
+
+  function build(screen: HTMLElement) {
+    restore();
+    active = screen;
+    select(screen);
+    if (reduced.matches) return;
+    const targets = parts.get(screen)!;
+    // Keyboard focus always takes priority over decorative motion.
+    const focused = document.activeElement;
+    const animated = targets.filter(target => !focused || !target.contains(focused));
+    gsap.set(animated, { opacity: 0, clipPath: 'inset(0 100% 0 0)' });
+    skip.hidden = false;
+    const edgeX = Math.max(0, innerWidth - 76);
+    const edgeY = Math.max(0, innerHeight - 100);
+    const clampX = gsap.utils.clamp(6, Math.max(6, edgeX));
+    const clampY = gsap.utils.clamp(72, Math.max(72, edgeY));
+    timeline = gsap.timeline({ onComplete: () => {
+      restore();
+      if (!scrollLocked) return;
+      visited.add(screen);
+      progress.textContent = `${visited.size} / ${screens.length}`;
+      if (visited.size === screens.length) unlockScroll();
+    } });
+    const current = timeline;
+
+    const ticker = targets.find(target => target.classList.contains('ticker'));
+    cursors.forEach((cursor, index) => {
+      const target = (index === cursors.length - 1 ? ticker : undefined) ?? targets[index % targets.length] ?? screen;
+      const rect = target.getBoundingClientRect();
+      const row = (index + 1) / (cursors.length + 1);
+      gsap.set(cursor, { x: index % 2 ? edgeX : 8, y: clampY(innerHeight * row), autoAlpha: 0 });
+      current.to(cursor, { autoAlpha: 1, duration: .3 }, index * .06)
+        .to(cursor, { x: clampX(rect.left + rect.width * .15), y: clampY(rect.top + index * 5), duration: 1.25, ease: 'power2.inOut' }, .1 + index * .08)
+        .to(cursor, { x: clampX(rect.right - 32), y: clampY(rect.bottom - 16), duration: 1.6, ease: 'power1.inOut' }, 1.4 + index * .08)
+        .to(cursor, { x: clampX(innerWidth * row), y: edgeY, autoAlpha: 0, duration: .65, ease: 'power2.in' }, 3.85);
+    });
+    animated.forEach((target, index) => {
+      const start = .55 + index / Math.max(1, animated.length - 1) * 1.65;
+      current.to(target, { opacity: 1, clipPath: 'inset(0 0% 0 0)', duration: 1.5, ease: 'power2.out' }, start);
+    });
+    current.to({}, { duration: BUILD_DURATION }, 0);
+  }
+
+  function navigate(screen: HTMLElement) {
+    clearTimeout(scrollTimer);
+    navigating = true;
+    if (scrollLocked) {
+      screens.forEach(candidate => { candidate.inert = candidate !== screen; });
+      progress.textContent = `${visited.size} / ${screens.length}`;
+    }
+    // Native smooth scrolling would leave the cursors aiming at moving rectangles.
+    window.scrollTo({ top: screen.offsetTop, behavior: 'instant' });
+    screen.scrollTop = 0;
+    build(screen);
+    cancelAnimationFrame(navigationFrame);
+    navigationFrame = requestAnimationFrame(() => { navigating = false; });
+  }
+
+  function beginExploration(first: HTMLElement) {
+    unlockScroll();
+    if (reduced.matches) return;
+    visited.clear();
+    scrollLocked = true;
+    document.documentElement.classList.add('swarm-locked');
+    status.hidden = false;
+    navigate(first);
+  }
+
+  function replayScreen() { navigate(active ?? nearestScreen()); }
+
+  function onClick(event: MouseEvent) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if ((event.target as Element).closest('[data-project]')) unlockScroll();
+    const link = (event.target as Element).closest<HTMLAnchorElement>('a[href^="#"]');
+    if (!link) return;
+    const screen = screens.find(candidate => `#${candidate.id}` === link.getAttribute('href'));
+    if (!screen) {
+      if (link.hash === '#main') unlockScroll();
+      return;
+    }
+    event.preventDefault();
+    history.pushState(null, '', `#${screen.id}`);
+    navigate(screen);
+  }
+
+  function onScroll(event: Event) {
+    if (navigating || scrollLocked) return;
+    // Scrolling within a tall screen changes cursor geometry too.
+    if (event.target instanceof HTMLElement && event.target.matches('.page-screen, .home-main')) {
+      restore();
+      return;
+    }
+    restore();
+    clearTimeout(scrollTimer);
+    scrollTimer = window.setTimeout(() => {
+      const next = nearestScreen();
+      // Wait for the screen's snap position before exposing its content.
+      if (Math.abs(next.getBoundingClientRect().top) <= 2 && next !== active) build(next);
+    }, 140);
+  }
+
+  function onFocus(event: FocusEvent) {
+    const screen = (event.target as HTMLElement).closest<HTMLElement>('.page-screen');
+    if (!screen) return;
+    if (screen !== active) {
+      unlockScroll();
+      navigate(screen);
+    } else if (timeline) {
+      unlockScroll();
+      select(screen);
+    }
+  }
+
+  function onKey(event: KeyboardEvent) {
+    if (event.key === 'Escape') unlockScroll();
+    if (scrollLocked && ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key)
+      && !(event.target as HTMLElement).closest('button, a, input, textarea, select')) event.preventDefault();
+  }
+
+  function onResize() { unlockScroll(); }
+  function onMotionChange() { unlockScroll(); replay.hidden = reduced.matches; }
+  function onHistory() {
+    const screen = screens.find(candidate => `#${candidate.id}` === location.hash) ?? (!location.hash ? screens[0] : null);
+    if (screen) navigate(screen);
+  }
+  function onVisibility() { if (document.hidden) unlockScroll(); }
+  function skipAnimation() { unlockScroll(); }
+
+  replay.hidden = reduced.matches;
+  skip.addEventListener('click', skipAnimation);
+  replay.addEventListener('click', replayScreen);
+  document.addEventListener('click', onClick);
+  document.addEventListener('focusin', onFocus);
+  document.addEventListener('scroll', onScroll, { capture: true, passive: true });
+  document.addEventListener('visibilitychange', onVisibility);
+  window.addEventListener('keydown', onKey);
+  window.addEventListener('resize', onResize);
+  window.addEventListener('beforeprint', unlockScroll);
+  window.addEventListener('pagehide', unlockScroll);
+  window.addEventListener('popstate', onHistory);
+  window.addEventListener('hashchange', onHistory);
+  reduced.addEventListener('change', onMotionChange);
+
+  // Only the active screen is exposed; without JavaScript every section stays readable.
+  document.documentElement.classList.add('swarm-ready');
+  // Only explicit navigation changes screens; completion records progress and unlocks scrolling.
+  const initial = screens.find(screen => `#${screen.id}` === location.hash);
+  if (reduced.matches || location.hash === '#main') {
+    active = initial ?? nearestScreen();
+    select(active);
+    if (initial) navigate(initial);
+  } else beginExploration(initial ?? screens[0]);
+
+  return () => {
+    unlockScroll();
+    document.documentElement.classList.remove('swarm-ready');
+    screens.forEach(screen => screen.classList.remove('swarm-active'));
+    clearTimeout(scrollTimer);
+    cancelAnimationFrame(navigationFrame);
+    skip.removeEventListener('click', skipAnimation);
+    replay.removeEventListener('click', replayScreen);
+    document.removeEventListener('click', onClick);
+    document.removeEventListener('focusin', onFocus);
+    document.removeEventListener('scroll', onScroll, true);
+    document.removeEventListener('visibilitychange', onVisibility);
+    window.removeEventListener('keydown', onKey);
+    window.removeEventListener('resize', onResize);
+    window.removeEventListener('beforeprint', unlockScroll);
+    window.removeEventListener('pagehide', unlockScroll);
+    window.removeEventListener('popstate', onHistory);
+    window.removeEventListener('hashchange', onHistory);
+    reduced.removeEventListener('change', onMotionChange);
+  };
 }

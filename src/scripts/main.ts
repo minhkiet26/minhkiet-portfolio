@@ -3,7 +3,7 @@ import { setupScrollRebuild } from './scroll-rebuild';
 
 type Language = 'vi' | 'en';
 const english: Record<string, string> = {
- skip:'Skip to content',welcome:'Glad you stopped by!',hello:'HELLO THERE, I’M',intro:'A third-year student<br/>in Software Engineering.',introNote:'A little space for the things I learn,<br/>the projects I build, and the journey along the way.',explore:'Explore my projects',replay:'Watch the cursors build again',photoNote:'A little me, away from the code.',sticker:'Stay curious.<br/>Keep learning.',scroll:'There’s more to discover',projectsLabel:'02 / THINGS I’VE BUILT',projectsTitle:'From an idea<br/>to <em>something real.</em>',projectsNote:'Learning by getting my hands into it.<br/>Two course projects. Plenty of discoveries.',coursework:'COURSE PROJECT',vnzDesc:'A corporate website backend for managing content, products, recruitment, and connections with visitors.',sealDesc:'A hackathon management system: from teams and submissions to scoring, leaderboards, and notifications.',team3:'Team of 3',team4:'Team of 4',details:'Explore project',honesty:'Both are learning projects without real users yet. The visuals above are project illustrations.',aboutLabel:'03 / A LITTLE ABOUT ME',aboutTitle:'Learn a little.<br/><em>Build step by step.</em>',aboutText:'I’m Kiệt, a third-year Software Engineering student. C# is my main language. I enjoy understanding how a request moves through an API, business logic, and a database.',aboutText2:'Team projects have given me the opportunity to build backends, apply Clean Architecture, and deploy applications. This space brings together what I’ve built and what I’m continuing to learn.',githubVisit:'Visit my GitHub',toolbox:'Inside my toolbox',mainLanguage:'MY MAIN LANGUAGE',backend:'Building backends & APIs',used:'WORKED WITH',also:'ALSO EXPLORED',testing:'Unit testing: learned the basics, still building practical experience.',contactLabel:'04 / LET’S STAY IN TOUCH',contactTitle:'A simple hello.<br/>A <em>new connection.</em>',made:'A little space, made with Astro & GSAP.',backTop:'Back to top ↑',navHome:'Home',navProjects:'Projects',navAbout:'About',navSkills:'Toolbox',navContact:'Contact',skipAnimation:'Skip animation →',projectStory:'PROJECT NOTES / BEHIND THE BUILD'
+ skip:'Skip to content',welcome:'Glad you stopped by!',hello:'HELLO THERE, I’M',intro:'A third-year student<br/>in Software Engineering.',introNote:'A little space for the things I learn,<br/>the projects I build, and the journey along the way.',explore:'Explore my projects',replay:'Watch the cursors rebuild this section',photoNote:'A little me, away from the code.',sticker:'Stay curious.<br/>Keep learning.',scroll:'There’s more to discover',projectsLabel:'02 / THINGS I’VE BUILT',projectsTitle:'From an idea<br/>to <em>something real.</em>',projectsNote:'Learning by getting my hands into it.<br/>Two course projects. Plenty of discoveries.',coursework:'COURSE PROJECT',vnzDesc:'A corporate website backend for managing content, products, recruitment, and connections with visitors.',sealDesc:'A hackathon management system: from teams and submissions to scoring, leaderboards, and notifications.',team3:'Team of 3',team4:'Team of 4',details:'Explore project',honesty:'Both are learning projects without real users yet. The visuals above are project illustrations.',aboutLabel:'03 / A LITTLE ABOUT ME',aboutTitle:'Learn a little.<br/><em>Build step by step.</em>',aboutText:'I’m Kiệt, a third-year Software Engineering student. C# is my main language. I enjoy understanding how a request moves through an API, business logic, and a database.',aboutText2:'Team projects have given me the opportunity to build backends, apply Clean Architecture, and deploy applications. This space brings together what I’ve built and what I’m continuing to learn.',githubVisit:'Visit my GitHub',skillsLabel:'04 / FAMILIAR TOOLS',skillsTitle:'Take what I learn,<br/><em>and start building.</em>',toolbox:'Inside my toolbox',mainLanguage:'MY MAIN LANGUAGE',backend:'Building backends & APIs',used:'WORKED WITH',also:'ALSO EXPLORED',testing:'Unit testing: learned the basics, still building practical experience.',contactLabel:'05 / LET’S STAY IN TOUCH',contactTitle:'A simple hello.<br/>A <em>new connection.</em>',made:'A little space, made with Astro & GSAP.',backTop:'Back to top ↑',navHome:'Home',navProjects:'Projects',navAbout:'About',navSkills:'Toolbox',navContact:'Contact',tourLabel:'Viewed',tourHint:'Choose each Dock section to unlock scrolling',skipAnimation:'Skip animation →',projectStory:'PROJECT NOTES / BEHIND THE BUILD'
 };
 const vietnamese: Record<string,string> = {};
 document.querySelectorAll<HTMLElement>('[data-i18n]').forEach(el => { vietnamese[el.dataset.i18n!] = el.innerHTML; });
@@ -59,39 +59,5 @@ dock.addEventListener('pointermove',e=>{
 });
 dock.addEventListener('pointerleave',resetDock);
 dockItems.forEach(item=>{item.addEventListener('focus',()=>{if(!reduced.matches)gsap.to(item,{scale:1.25,y:-5,duration:.2});});item.addEventListener('blur',resetDock);});
-const observer=new IntersectionObserver(entries=>{
- for(const entry of entries){if(entry.isIntersecting){dockItems.forEach(item=>{const active=item.dataset.nav===entry.target.id;item.classList.toggle('active',active);if(active)item.setAttribute('aria-current','location');else item.removeAttribute('aria-current');});}}
-},{rootMargin:'-15% 0px -45% 0px',threshold:0});
-['home','projects','about','contact'].forEach(id=>{const section=document.getElementById(id);if(section)observer.observe(section);});
-dockItems.forEach(item=>item.addEventListener('click',()=>{dockItems.forEach(i=>{i.classList.toggle('active',i===item);i.removeAttribute('aria-current');});item.setAttribute('aria-current','location');}));
-
-// Original choreography built for this page. No Swarm extension source is used.
-let intro:gsap.core.Timeline|null=null;
-const targets=Array.from(document.querySelectorAll<HTMLElement>('.build-item'));
-const cursors=Array.from(document.querySelectorAll<HTMLElement>('.swarm-cursor'));
-const skip=document.querySelector<HTMLButtonElement>('#skip-animation')!;
-const replay=document.querySelector<HTMLButtonElement>('#replay')!;
-function finishIntro(){intro?.kill();intro=null;gsap.set(targets,{clearProps:'opacity,visibility,clipPath'});gsap.set(cursors,{autoAlpha:0});skip.hidden=true;replay.disabled=false;}
-function playIntro(){
- finishIntro();if(reduced.matches)return;
- if(window.scrollY>80){window.scrollTo({top:0,behavior:'instant'});}
- replay.disabled=true;skip.hidden=false;
- gsap.set(targets,{autoAlpha:0,clipPath:'inset(0 100% 0 0)'});
- cursors.forEach((cursor,i)=>gsap.set(cursor,{x:innerWidth*(.35+i*.15),y:innerHeight*.4,autoAlpha:1}));
- intro=gsap.timeline({onComplete:finishIntro});
- targets.forEach((target,i)=>{
-  const cursor=cursors[i%3];const rect=target.getBoundingClientRect();const start=i*.37;
-  intro!.to(cursor,{x:Math.min(rect.left-10,innerWidth-65),y:Math.min(rect.top,innerHeight-70),duration:.46,ease:'power2.inOut'},start)
-   .set(target,{autoAlpha:1},start+.35)
-   .to(target,{clipPath:'inset(0 0% 0 0)',duration:.62,ease:'power2.out'},start+.35)
-   .to(cursor,{x:Math.min(rect.right,innerWidth-70),y:Math.min(rect.bottom-15,innerHeight-70),duration:.6,ease:'power2.inOut'},start+.4);
- });
- intro.to(cursors,{x:innerWidth-50,y:innerHeight-30,autoAlpha:0,duration:.5,stagger:.08},'>');
-}
-skip.addEventListener('click',finishIntro);replay.addEventListener('click',playIntro);
-window.addEventListener('resize',()=>{if(intro)finishIntro();});
-window.addEventListener('scroll',()=>{if(intro&&scrollY>100)finishIntro();},{passive:true});
-window.addEventListener('keydown',e=>{if(e.key==='Escape')finishIntro();});
-reduced.addEventListener('change',()=>{finishIntro();resetDock();});
-// Keep the introduction visible on arrival. The swarm builds lower sections as they enter view.
-setupScrollRebuild();
+reduced.addEventListener('change',resetDock);
+void document.fonts.ready.then(() => setupScrollRebuild());
