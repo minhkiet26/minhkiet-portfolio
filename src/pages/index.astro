@@ -9,7 +9,7 @@ import '../styles/global.css';
     <meta name="description" content="Portfolio cá nhân của Minh Kiệt — sinh viên năm 3 ngành Kỹ thuật phần mềm. Khám phá dự án VNZ-DNA và SEAL Hackathon." />
     <meta name="theme-color" content="#f5f7f2" />
     <title>Minh Kiệt — Personal space</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
     <script is:inline>
       try { document.documentElement.dataset.theme = localStorage.getItem('mk-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch {}
     </script>
@@ -34,7 +34,7 @@ import '../styles/global.css';
           <button id="replay" class="replay" hidden><Icon name="replay" size={14}/><span data-i18n="replay">Xem con trỏ dựng lại mục này</span></button>
         </div>
         <div class="portrait-area build-item">
-          <div class="portrait-outline"></div><div class="portrait-window"><div class="window-bar"><span class="traffic"><i></i><i></i><i></i></span><span>hello-world.jpg</span><Icon name="external" size={13}/></div><div class="portrait-image"><img src="/images/minh-kiet.png" alt="Minh Kiệt mỉm cười trước một quầy hàng màu vàng" width="1919" height="1279" fetchpriority="high"/><div class="photo-caption"><span data-i18n="photoNote">Một chút mình, ngoài những dòng code.</span><span>↗</span></div></div></div>
+          <div class="portrait-outline"></div><div class="portrait-window"><div class="window-bar"><span class="traffic"><i></i><i></i><i></i></span><span>hello-world.jpg</span><Icon name="external" size={13}/></div><div class="portrait-image"><img src={`${import.meta.env.BASE_URL}images/minh-kiet.png`} alt="Minh Kiệt mỉm cười trước một quầy hàng màu vàng" width="1919" height="1279" fetchpriority="high"/><div class="photo-caption"><span data-i18n="photoNote">Một chút mình, ngoài những dòng code.</span><span>↗</span></div></div></div>
           <div class="floating-sticker yellow"><span>✳</span><span data-i18n="sticker">Luôn tò mò.<br/>Luôn học hỏi.</span></div>
           <div class="floating-tag"><span class="status-dot"></span><span>learning, building, growing</span></div><span class="portrait-doodle">✧</span>
         </div>
